@@ -1,5 +1,5 @@
 //#include "DrawLib.h"
-#include "TextParseLib.h"
+#include "../includes/TextParseLib.h"
 #include <stdlib.h>
 
 void get_result_P03_D20();
@@ -10,10 +10,10 @@ int main() {
 }
 
 void get_result_P03_D20() {
-    exprn initial;
+    exprn_t initial;
     debug_output(&initial);
-    initial.raw = GetExprFromOutside();
-    if (initial.raw != NULL) {
+    initial.raw.s = GetExprFromOutside();
+    if (initial.raw.s != NULL) {
         initial.is_empty = 0;
     }
     debug_output(&initial);

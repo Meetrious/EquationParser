@@ -1,4 +1,4 @@
-#include "TextParseLib.h"
+#include "../includes/TextParseLib.h"
 #include <math.h>
 
 const char var = 'a';

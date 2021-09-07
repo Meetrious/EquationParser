@@ -20,10 +20,10 @@ typedef struct operation oper_t;
 struct expression {
     //
     // указатель на правое подвыражение относительно текущей операции
-    struct expression_t *ttl;  // to the left
+    struct expression *ttl;  // to the left
     //
     // указатель на левое подвыражение отностельно текущей операции 
-    struct expression_t *ttr;  // to the right
+    struct expression *ttr;  // to the right
     //
     // сырая строка с выражением, требующим вычисление
     dcstr_t raw;  // current raw expression

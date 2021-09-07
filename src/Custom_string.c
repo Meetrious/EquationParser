@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "Custom_string.h"
+#include "../includes/Custom_string.h"
 
 
 void Construct(dcstr_t *str) {

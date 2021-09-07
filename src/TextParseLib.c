@@ -3,11 +3,11 @@
 
 // здесь лежат объявления функций, которые
 // будут определены ниже
-#include "TextParseLib.h"
+#include "../includes/TextParseLib.h"
 
 // здесь находятся операции, относительно которых
 // будет разбиваться выражение
-#include "operations.h" 
+#include "../includes/operations.h" 
 
 // объявляем в глобальном поле константный массив
 // из указателей на функции с сигнатурами 
@@ -123,25 +123,20 @@ void ExprDestruct(exprn_t *knot) {
     return;
 }
 
-
-int get_find_operation(dcstr_t *eq, dcstr_t *oper) {
+int get_find_operation(dcstr_t *eq, char const *oper) {
     int res;
     int oper_len = 0;
-    int eq_len = 0;
     while(oper[oper_len]!= '\0')
         oper_len++;
-    while(eq[eq_len]!= '\0')
-        oper_len++;
-
     int i;
-    for (i = 0; i < eq_len - oper_len; i++) {
-        if (eq[i] == '(') {
-            while (eq[i]!= ')')
+    for (i = 0; i < eq->l - oper_len; i++) {
+        if (eq->s[i] == '(') {
+            while (eq->s[i]!= ')')
                 i++;
         }
-        if (i < eq_len - oper_len){
+        if (i < eq->l - oper_len){
             for (int j = 0; j < oper_len; j++) {
-                if (eq[i+j] == oper[j] ) {
+                if (eq->s[i+j] == oper[j] ) {
                     continue;
                 } else {
                     break;
@@ -149,22 +144,18 @@ int get_find_operation(dcstr_t *eq, dcstr_t *oper) {
             }
         }
     }
-    if (i >= eq_len - oper_len) {
-        res = &eq[eq_len];  // указываем на терминатор
+    if (i >= eq->l - oper_len) {
+        res = &eq->s[eq->l];  // указываем на терминатор
     } else {
-        res = &eq[i];  // указываем на позицию, с которой начинается операция
+        res = &eq->s[i];  // указываем на позицию, с которой начинается операция
     }
     return res;
 }
 
-// ф-ция, которая определяет следующую операцию,
-// которая будет разбивать выражение,
-// объявленное в cur->raw строке.
-// Целиком инициализирует объект cur->oper.
 void define_operation (exprn_t *cur) {
     int i;
     for (i = 0; *operations_names[i] != '\0'; i++) {
-        cur->oper.pos = get_find_operation(cur->raw, operations_names[i]);
+        cur->oper.pos = get_find_operation(&cur->raw, operations_names[i]);
         if (cur->oper.pos != '\0') {
             break;
         }
@@ -175,7 +166,7 @@ void define_operation (exprn_t *cur) {
 
     // назначаем узлу cur определённую выше операцию
     for (int j = 0; operations_names[i][j] != '\0'; j++) {
-        cur->oper.name[j] = operations_names[i][j];
+        cur->oper.name.s[j] = operations_names[i][j];
     }
     // назначаем фактическую get_операцию для текущего узла
     cur->oper.action = oper_list[i];
@@ -184,20 +175,26 @@ void define_operation (exprn_t *cur) {
 }
 
 void apply_brackets_filter(exprn_t *cur) {
-    if (cur->raw[0] == '(') {
+    if (cur->raw.s[0] == '(') {
+        // если текущее выражение начинается со скобки
         int i = 0;
-        while (cur->raw[i] != ')') {
+        while (cur->raw.s[i] != ')') {
+            // то идём до конца её содержимого
             i++;
         }
-        if (cur->raw[i+1] == '\0') {
-            for (int j = 0; cur->raw[j] != '\0'; j++) {
-                cur->raw[j] = cur->raw[j+1];
+        if (cur->raw.s[i+1] == '\0') {
+            cur->raw.s[i] = '\0'; // убираем крайнюю скобку
+            // если так случилось, что обрамляла уравнение целиком
+            for (int j = 0; cur->raw.s[j] != '\0'; j++) {
+                // сдвигаем содержимое скобок на одну позицию влево
+                cur->raw.s[j] = cur->raw.s[j+1];
             }
         } 
     }
     return;
 }
 
+/*
 void set_subexpressions(exprn_t *cur) {
     
     // длина левого подвыражения = позиции на которой начинается
@@ -225,13 +222,13 @@ void set_subexpressions(exprn_t *cur) {
         }
     }
     
-}
+} // */
 
 void DivideExpression(exprn_t *cur) {
-    
+    //
     // определяем следующую операцию в cur->raw
     define_operation(cur);
-        if (cur->oper.name[0] != '\0') {
+        if (cur->oper.name.s[0] != '\0') {
         // выделяем динамическую память на новые элементы 
         // для подвыражений текущего cur->raw
         cur->ttl = (exprn_t*)malloc( 1 * sizeof(exprn_t));

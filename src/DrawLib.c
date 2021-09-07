@@ -1,6 +1,6 @@
 // все описания функций и зачем они нужны лежит в хедере
 #include <stdio.h>
-#include "DrawLib.h"
+#include "../includes/DrawLib.h"
 
 // левый отступ от края терминала
 const int INDT = 5;  // +1 = левая граница, +1 = начало ареала
