@@ -1,5 +1,5 @@
 #include <time.h>
-#include "misc.h"
+#include "../includes/misc.h"
 
 float get_random(float a, float b) {
     float tmp = (rand() % 10001)/10000.0;

@@ -3,11 +3,11 @@
 
 // здесь лежат объявления функций, которые
 // будут определены ниже
-#include "TextParseLib.h"
+#include "../includes/TextParseLib.h"
 
 // здесь находятся операции, относительно которых
 // будет разбиваться выражение
-#include "operations.h" 
+#include "../includes/operations.h" 
 
 // объявляем в глобальном поле константный массив
 // из указателей на функции с сигнатурами 
@@ -38,7 +38,7 @@ static const double (*oper_list[])(double, double) = {
 // наших raw - математических выражений
 //
 // Он является статическим по аналогичным причинам
-static const char *operations_names[] = {
+static const char *oper_names[] = {
     "+", 
     "-",
     "*", 
@@ -124,74 +124,89 @@ void ExprDestruct(exprn_t *knot) {
 }
 
 
-int get_find_operation(dcstr_t *eq, dcstr_t *oper) {
+int get_find_operation(dcstr_t *eq, char *oper) {
+    //
+    // сюда поместим результат поиска операции
     int res;
-    int oper_len = 0;
-    int eq_len = 0;
-    while(oper[oper_len]!= '\0')
-        oper_len++;
-    while(eq[eq_len]!= '\0')
-        oper_len++;
-
+    //
+    // буфер для хранения длины идентификатора операции
+    int oper_len = cstrlen(oper);
     int i;
-    for (i = 0; i < eq_len - oper_len; i++) {
-        if (eq[i] == '(') {
-            while (eq[i]!= ')')
-                i++;
-        }
-        if (i < eq_len - oper_len){
-            for (int j = 0; j < oper_len; j++) {
-                if (eq[i+j] == oper[j] ) {
+    for (i = 0; i < eq->l - oper_len; i++) {
+        int j = 0;
+        if (eq->s[i] == '(') {
+            //
+            // если в выражении наткнулись на скобку
+            while (eq->s[i] != ')') {
+                i++;  // пропускаем содержимое скобки
+            }
+        } else if (i < eq->l - oper_len) {
+            //
+            // если до конца строки с уравнением осталось больше позиций,
+            // чем длина идентификатора операции
+            for (j = 0; j < oper_len; j++) {
+                //
+                // ищем вхождение идентификатора операции в строке с уравнением
+                if (eq->s[i+j] == oper[j] ) {
                     continue;
                 } else {
                     break;
                 }
             }
         }
+        if (j == oper_len) {
+            //
+            // если цикл перебора символов в операции в поисках вхождения
+            // хоть раз дошёл до конца длины операции
+            break; // выходим из цикла на i преждевременно,
+            // ведь операция была обнаружена
+        }
     }
-    if (i >= eq_len - oper_len) {
-        res = &eq[eq_len];  // указываем на терминатор
+    if (i >= eq->l - oper_len) {
+        //
+        // если индекс перебора символов в строке с уравнением
+        // пересёк границу eq->l - oper_len
+        res = -1;  // указываем на терминатор
+        // ибо операция не была найдена
     } else {
-        res = &eq[i];  // указываем на позицию, с которой начинается операция
+        //
+        // иначе указываем на позицию, с которой начинается операция
+        res = i;
     }
     return res;
 }
 
-// ф-ция, которая определяет следующую операцию,
-// которая будет разбивать выражение,
-// объявленное в cur->raw строке.
-// Целиком инициализирует объект cur->oper.
 void define_operation (exprn_t *cur) {
     int i;
-    for (i = 0; *operations_names[i] != '\0'; i++) {
-        cur->oper.pos = get_find_operation(cur->raw, operations_names[i]);
-        if (cur->oper.pos != '\0') {
+    for (i = 0; *oper_names[i] != '\0'; i++) {
+        cur->oper.pos = get_find_operation(&cur->raw, oper_names[i]);
+        if (cur->oper.pos != -1) {
+            //
+            // если попали сюда, то на текущий момент в i
+            // лежит индекс нужной операции, относительно которой
+            // будет производиться разбиение сur->raw.s
             break;
         }
     }
-    int oper_len = 0;
-    while (operations_names[i][oper_len]!='\0')
-        oper_len++;
+    // определяем имя операции в cur->oper
+    Construct(&cur->oper.name, oper_names[i]);
 
-    // назначаем узлу cur определённую выше операцию
-    for (int j = 0; operations_names[i][j] != '\0'; j++) {
-        cur->oper.name[j] = operations_names[i][j];
-    }
     // назначаем фактическую get_операцию для текущего узла
     cur->oper.action = oper_list[i];
-
     return;
 }
 
-void apply_brackets_filter(exprn_t *cur) {
-    if (cur->raw[0] == '(') {
+void filter_brackets(char *expr) {
+    if (expr[0] == '(') {
         int i = 0;
-        while (cur->raw[i] != ')') {
+        while (expr[i] != ')') {
             i++;
         }
-        if (cur->raw[i+1] == '\0') {
-            for (int j = 0; cur->raw[j] != '\0'; j++) {
-                cur->raw[j] = cur->raw[j+1];
+        if (expr[i+1] == '\0') {
+            //
+            // если скобка закрылась прямо перед концом выражения
+            for (int j = 0; expr[j] != '\0'; j++) {
+                expr[j] = expr[j+1];
             }
         } 
     }
@@ -231,7 +246,7 @@ void DivideExpression(exprn_t *cur) {
     
     // определяем следующую операцию в cur->raw
     define_operation(cur);
-        if (cur->oper.name[0] != '\0') {
+    if (cur->oper.name[0] != '\0') {
         // выделяем динамическую память на новые элементы 
         // для подвыражений текущего cur->raw
         cur->ttl = (exprn_t*)malloc( 1 * sizeof(exprn_t));
@@ -252,4 +267,20 @@ void DivideExpression(exprn_t *cur) {
         // не на что разделять конструкцию
     }
     return;
+}
+
+// ============= вспомогательный сахар ================
+
+int cstrlen(char const *str) {
+    int length = 0;
+    if (str != NULL) {
+        // вычисляем длину строки
+        while(str[length] != '\0')
+            length++;
+    } else {
+        //
+        // в случае, если в функцию попал NULL
+        length = -1;
+    }
+    return length;
 }

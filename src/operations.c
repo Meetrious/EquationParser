@@ -1,4 +1,4 @@
-#include "operations.h"
+#include "../includes/operations.h"
 #include <math.h>
 
 // ======= ниже определения операций в унифицированной сигнатуре ===========

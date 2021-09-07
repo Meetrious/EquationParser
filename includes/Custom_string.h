@@ -9,6 +9,8 @@ struct dynamic_custom_string {
     int l  // length: хранит размер строки до gthdjuj нуль-терминатора
 };  
 
+// объявляя экземпляр типа dynamic_custom_string
+// мы хотим обращаться к нему короче: dcstr_t
 typedef struct dynamic_custom_string dcstr_t;
 
 // ф-ция выделяющая память для строки

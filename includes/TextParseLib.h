@@ -1,7 +1,7 @@
 #ifndef SRC_TEXTPARSELIB_H_
 #define SRC_TEXTPARSELIB_H_
 
-#include "Custom_string.h"
+#include "../includes/Custom_string.h"
 
 struct operation {
     // указатель на функцию, которая реализует операцию
@@ -20,10 +20,10 @@ typedef struct operation oper_t;
 struct expression {
     //
     // указатель на правое подвыражение относительно текущей операции
-    struct expression_t *ttl;  // to the left
+    struct expression *ttl;  // to the left
     //
     // указатель на левое подвыражение отностельно текущей операции 
-    struct expression_t *ttr;  // to the right
+    struct expression *ttr;  // to the right
     //
     // сырая строка с выражением, требующим вычисление
     dcstr_t raw;  // current raw expression
@@ -51,8 +51,18 @@ typedef struct expression exprn_t;
 // ф-ция определяет raw и состояние is_empty
 void ExprnConstruct(exprn_t *knot);
 
+
+
+// ф-ция, которая определяет следующую операцию,
+// которая будет разбивать выражение,
+// объявленное в cur->raw строке.
+// Целиком инициализирует объект cur->oper.
 void define_operation (exprn_t *cur);
-//
+
+// ф-ция, которая убирает обрамляющие скобки
+// c текущего состояния выражения
+void filter_brackets(char *expr);
+
 // ф-ция, которая доходит до первой операции в cur->raw
 // и создаёт два экземпляра в куче типа exprn
 // инициализируя raw-строки в них и определяет is_empty
@@ -71,11 +81,17 @@ char *GetExprFromOutside();
 
 // ф-ция передаёт указатель на позицию в строке eq,
 // с которой начинается данная операция в строке oper
-int get_find_operation(dcstr_t *eq, dcstr_t *oper);
+int get_find_operation(dcstr_t *eq, char *oper);
 
 // ф-ция вывода информации о
 // текущем узле разбиения
 // математического выражения
 void debug_output(exprn_t *knot);
+
+// ======= вспомогательный сахар ==========
+
+// custom_strlen - моя ф-ция вывода длины строки
+// возвращает индекс с нуль-терминатором
+int cstrlen(char const *str);
 
 #endif  // SRC_TEXTPARSELIB_H_
