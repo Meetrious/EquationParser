@@ -1,0 +1,37 @@
+# перечисляем папки
+ROOT = ../..
+OBJ = $(ROOT)/obj
+BUILD = $(ROOT)/build
+INCLUDES = $(ROOT)/includes
+SRC = $(ROOT)/src
+
+
+# перечисляем флаги для сборки исполняемых файлов
+LDFLAGS = #-Wall -Werror -Wextra
+
+dyn_str: dynamic_main.c
+	gcc $(LDFLAGS) dynamic_main.c -o $(BUILD)/dyn_test
+
+custom_str: dcstr_main.c misc.o Custom_string.o
+	gcc $(LDFLAGS) dcstr_main.c $(OBJ)/misc.o $(OBJ)/Custom_string.o  -o $(BUILD)/dcstr_test
+
+0_exprn: 0_exprn_main.c misc.o Custom_string.o operations.o TextParseLib.o
+	gcc $(LDFLAGS) 0_exprn_main.c $(OBJ)/misc.o $(OBJ)/Custom_string.o $(OBJ)/operations.o $(OBJ)/TextParseLib.o -o $(BUILD)/$@
+
+1_exprn: 1_exprn_main.c misc.o Custom_string.o operations.o TextParseLib.o
+	gcc $(LDFLAGS) 1_exprn_main.c $(OBJ)/misc.o $(OBJ)/Custom_string.o $(OBJ)/operations.o $(OBJ)/TextParseLib.o -o $(BUILD)/$@
+
+
+#TextParseLib.o: 
+
+#Custom_string.o: $(SRC)/Custom_string.c 
+#	gcc -c $(LDFLAGS) $(SRC)/Custom_string.c  -o $(OBJ)/$@
+
+#misc.o: $(SRC)/misc.c
+#	gcc -c $(LDFLAGS) $(SRC)/misc.c -o $(OBJ)/$@
+
+%.o: $(SRC)/%.c
+	gcc -c $(LDFLAGS) $< -o $(OBJ)/$@
+
+clean:
+	rm $(OBJ)/*.o $(BUILD)/*.exe

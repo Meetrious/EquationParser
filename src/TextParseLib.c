@@ -10,14 +10,14 @@
 #include "../includes/operations.h" 
 
 // объявляем в глобальном поле константный массив
-// из указателей на функции с сигнатурами 
+// из указателей на функции с сигнатурами а
 // (double x double) -> double
 //
 // Модификатор static в данном случае означает, что
 // область видимости объекта oper_list не покидает границ
 // текущего си-файла. Мы не можем обратиться к oper_list 
 // в си-файле с точкой входа int main
-static const double (*oper_list[])(double, double) = {
+static double (*oper_list[])(double, double) = {
     get_addition, 
     get_addition,
     get_product,
@@ -56,75 +56,115 @@ static const char *oper_names[] = {
 // объявляем в глобальном поле константный массив из строк
 const char *expr_name = "expression.txt";
 
-
-void debug_output(exprn_t *knot) {
-    printf("\n");
-    printf("current adress = %p\n", knot);
-    printf("current raw expression = %s \n", knot->raw.s);
-    printf("current operation = %s \n", knot->oper.name);
-    printf("left sub_expression adress = %p\n", knot->ttl);
-    printf("right sub_expression adress = %p\n", knot->ttr);
-    printf("is_empty flag state = %d\n", knot->is_empty);
-    printf("current stack = { %lf, %lf }\n", knot->stack[0], knot->stack[1]);
-    printf("\n");
+void ConstructExprn(exprn_t *knot) {
+    Construct_by_def(&knot->raw);
+    Construct_by_def(&knot->oper.name);
+    knot->stack[0] = 0.0;
+    knot->stack[1] = 0.0;
+    knot->is_empty = 0; // память выделена.
+    knot->is_negative = 0;
+    knot->ttl = knot->ttr = NULL;
     return;
 }
 
-char *GetExprFromOutside() {
-    char *str = NULL;
+void DestructExprn(exprn_t *knot) {
+    if (knot->ttl != NULL) {
+        printf("\n we came here1");
+        free(knot->ttl);
+        knot->ttl = NULL;
+    }
+    if (knot->ttr != NULL) {
+        printf("\n we came here2");
+        free(knot->ttr);
+        knot->ttr = NULL;
+    }
+    if (!knot->is_empty) {
+        printf("\n we came here3");
+        Destruct(&knot->raw);
+        Destruct(&knot->oper.name);
+        knot->is_empty = 1;
+    }
+    return;
+}
+
+void debug_output(exprn_t *knot) {
+    printf("\n\n\n//======================================\n");
+    printf("\n knot address = %p\n", knot);
+    printf("\n current raw expression: \n");
+    debug_str_output(&knot->raw);
+    printf("\n current operation: \n");
+    debug_str_output(&knot->oper.name);
+    printf("\n left sub_expression address = %p\n", knot->ttl);
+    printf("\n right sub_expression address = %p\n", knot->ttr);
+    printf("\n is_empty flag state = %d\n", knot->is_empty);
+    printf("\n is_negative flag state = %d\n", knot->is_negative);
+    printf("\n current stack = { %lf, %lf }\n", knot->stack[0], knot->stack[1]);
+    printf("\n//--------------------------------------\n\n\n");
+    fflush(stdout);
+    return;
+}
+
+char* get_init_exprn() {
     FILE *instream = NULL;
+    char *buffer = NULL;
     int len = 10;
     instream = fopen(expr_name, "rt");
     if (instream != NULL) {
-        str = (char*)malloc(len * sizeof(char));
-        if (str != NULL) {
+        buffer = (char*)malloc(len * sizeof(char));
+        if (NULL != buffer) {
+            //  если память выделилась конструктором
             int i = 0;
-            str[i] = '\0';
+            buffer[i] = '\0';
             while (1) {
                 while (i < len - 1 && !feof(instream)) {
-                    str[i+1] = '\0';
-                    fscanf(instream, "%c", &str[i]);
+                    buffer[i+1] = '\0';
+                    fscanf(instream, "%c", &buffer[i]);
                     i++;
                 }
                 if (i == len - 1 && !feof(instream)) {
-                    len *= 2;
-                    str = (char*)realloc(str, len * sizeof(char));
-                    if (str == NULL) {
+                    int tmp = len * 1.5;
+                    char *buf = (char*)realloc(buffer, tmp * sizeof(char));
+                    if (NULL == buf) {
                         printf("\n failed to reallocate memory for the expression");
+                        printf("\n\t the string is to be cleared\n");
+                        free(buffer);
+                        buffer = NULL;
+                        len = -1;
                         break;
+                    } else {
+                        buffer = buf;
+                        len = tmp;
                     }
                 } else {
                     break;
                 }
             }
+        } else {
+            printf("\n failed to construct string");
         }
     } else {
         printf("\n failed to open stream for input");
     }
-    if (instream != NULL)
+    if (instream != NULL){
         fclose(instream);
-    len = 0;
-    while (str[len]!='\0')
-        len++;
-    str = (char*)realloc(str, (len + 1) * sizeof(char));
-    if (str == NULL) 
-        printf("\n failed to reallocate memory for the expression");
-    return str;
+    }
+    return buffer;
 }
 
-void ExprDestruct(exprn_t *knot) {
-    free(knot->ttl);
-    knot->ttl = NULL;
-    free(knot->ttr);
-    knot->ttr = NULL;
-    Destruct(&knot->raw);
-    Destruct(&knot->oper.name);
-    knot->is_empty = 1;
+void SetInitialExpression(exprn_t *root) {
+    char *b_str = NULL;
+    b_str = get_init_exprn();
+    if (NULL != b_str) {
+        Initialise(&root->raw, b_str);
+    } else {
+        printf("\n failed to initialise init_expr \n");
+    }
+    free(b_str);
+    b_str = NULL;
     return;
 }
 
-
-int get_find_operation(dcstr_t *eq, char *oper) {
+int get_find_operation(dcstr_t *eq, char const *oper) {
     //
     // сюда поместим результат поиска операции
     int res;
@@ -189,7 +229,8 @@ void define_operation (exprn_t *cur) {
         }
     }
     // определяем имя операции в cur->oper
-    Construct(&cur->oper.name, oper_names[i]);
+    // Construct(&cur->oper.name, oper_names[i]);
+    Initialise(&cur->oper.name, oper_names[i]);
 
     // назначаем фактическую get_операцию для текущего узла
     cur->oper.action = oper_list[i];
@@ -214,39 +255,25 @@ void filter_brackets(char *expr) {
 }
 
 void set_subexpressions(exprn_t *cur) {
-    
-    // длина левого подвыражения = позиции на которой начинается
-    // операция + позиция для терминатора
-    cur->ttl->raw = get_dyn_str(cur->oper.pos + 1);
-    if (cur->ttl->raw != NULL) {
-        for (int i = 0; i <= cur->oper.pos; i++) {
-            cur->ttl->raw[i] = cur->raw[i];
-        }
-    }
-    int oper_len = 0;
-    while (cur->oper.name[oper_len] != '\0')
-        oper_len++;
+    //
+    // определяем строку в левом подвыражении
+    set_dcstr_fract(&cur->ttl->raw, &cur->raw,
+                     0, cur->oper.pos);
+    //
+    // определяем строку в правом подвыражении
+    set_dcstr_fract(&cur->ttr->raw, &cur->raw,
+                     cur->oper.pos + cur->oper.name.l, cur->raw.l);
 
-    int i = cur->oper.pos + oper_len;
-
-    int eq_end = 0;
-    while (cur->raw[eq_end]!='\0')
-        eq_end++;
-    
-    cur->ttr->raw = get_dyn_str(eq_end - i + 1);
-     if (cur->ttl->raw != NULL) {
-        for (int j = 0; i <= eq_end - i; j++) {
-            cur->ttr->raw[j] = cur->raw[i+j];
-        }
-    }
-    
+    // - нужны ли здесь какие-нибудь проверки?
+    // -- пока не придумал.
+    return;
 }
-
-void DivideExpression(exprn_t *cur) {
+void divide_expression(exprn_t *cur) {
     
-    // определяем следующую операцию в cur->raw
+    // определяем наименее приоритетную операцию в cur->raw
     define_operation(cur);
-    if (cur->oper.name[0] != '\0') {
+
+    if (cur->oper.name.s[0] != '\0') {
         // выделяем динамическую память на новые элементы 
         // для подвыражений текущего cur->raw
         cur->ttl = (exprn_t*)malloc( 1 * sizeof(exprn_t));
@@ -255,32 +282,18 @@ void DivideExpression(exprn_t *cur) {
         // и если выделилось, то заполняем поля
         // cur->ttl->raw, cur-ttr->raw
         if (cur->ttl != NULL && cur->ttr != NULL) {
-           set_subexpressions(cur);
+            ConstructExprn(cur->ttl);
+            ConstructExprn(cur->ttr);
+            set_subexpressions(cur);
         }
     } else {
         //
-        // случай, когда операцию найти не получилось
-        // и для текущего узла была инициализирована
+        // случай, когда операцию в cur->raw найти не получилось
+        // и для текущего узла cur->oper.action был инициализирован
         // тождественным оператором
-        
-        // здесь никаких действий не требуется
-        // не на что разделять конструкцию
+        cur->ttl = NULL;
+        cur->ttr = NULL;
+        // память выделять не нужно, 
     }
     return;
-}
-
-// ============= вспомогательный сахар ================
-
-int cstrlen(char const *str) {
-    int length = 0;
-    if (str != NULL) {
-        // вычисляем длину строки
-        while(str[length] != '\0')
-            length++;
-    } else {
-        //
-        // в случае, если в функцию попал NULL
-        length = -1;
-    }
-    return length;
 }

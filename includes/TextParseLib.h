@@ -5,8 +5,8 @@
 
 struct operation {
     // указатель на функцию, которая реализует операцию
-    double (*action)(double, double);
     dcstr_t name;  // имя операции
+    double (*action)(double, double);  // указатель на операцию
     int pos;  // позиция первой буквы в raw;
 };
 
@@ -26,7 +26,7 @@ struct expression {
     struct expression *ttr;  // to the right
     //
     // сырая строка с выражением, требующим вычисление
-    dcstr_t raw;  // current raw expression
+    dcstr_t raw;  // raw expression
     //
     // пара аргументов для помещения в operation
     double stack[2];
@@ -49,9 +49,11 @@ struct expression {
 typedef struct expression exprn_t;
 
 // ф-ция определяет raw и состояние is_empty
-void ExprnConstruct(exprn_t *knot);
+void ConstructExprn(exprn_t *knot);
 
-
+// ф-ция-деструктор, которая освобождает память
+// по адресам в полях текущего узла
+void DestructExprn(exprn_t *knot);
 
 // ф-ция, которая определяет следующую операцию,
 // которая будет разбивать выражение,
@@ -70,28 +72,25 @@ void filter_brackets(char *expr);
 // и если находит операцию, то возвращает 1.
 // Если не находит операцию, то возвращает 0,
 // что сигнализирует о том, что перед нами осталась переменная
-void DivideExpression(exprn_t *cur);
+void divide_expression(exprn_t *cur);
 
-// ф-ция-деструктор, которая освобождает память
-// по адресам в полях текущего узла
-void ExprDestruct(exprn_t *knot);
+// ф-ция инициализации исходного выражение
+// по содержимому внешнего файла
+void SetInitialExpression(exprn_t *root);
 
-// ф-ция добычи математического выражения из внешнего файла
-char *GetExprFromOutside();
+char* get_init_exprn();
+
+// ф-ция инициализации исходного выражения
+// по вводу с клавиатуры
+void WriteInitialExpression(dcstr_t *str);
 
 // ф-ция передаёт указатель на позицию в строке eq,
 // с которой начинается данная операция в строке oper
-int get_find_operation(dcstr_t *eq, char *oper);
+int get_find_operation(dcstr_t *eq, char const *oper);
 
 // ф-ция вывода информации о
 // текущем узле разбиения
 // математического выражения
 void debug_output(exprn_t *knot);
-
-// ======= вспомогательный сахар ==========
-
-// custom_strlen - моя ф-ция вывода длины строки
-// возвращает индекс с нуль-терминатором
-int cstrlen(char const *str);
 
 #endif  // SRC_TEXTPARSELIB_H_

@@ -26,4 +26,6 @@ double get_log10(double a, double b);
 
 double get_sqrt(double a, double b);
 
+double get_pow(double a, double b);
+
 #endif  // SRC_OPERATIONS_H_

@@ -55,3 +55,7 @@ double get_sqrt(double a, double b) {
     (void)b;
     return sqrt(a);
 }
+
+double get_pow(double a, double b) {
+    return pow(a,b);
+}
